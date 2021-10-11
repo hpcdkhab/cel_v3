@@ -1,0 +1,55 @@
+#!/bin/bash
+ 
+#PBS -l walltime=00:10:00
+#PBS -l nodes=USER_PBS_NODES:ppn=20
+#USER_JOB_WIDTH
+#PBS -M hpcdkhab@hlrs.de
+#PBS -q batch
+#PBS -N USER_JOB_NAME
+#PBS -o /nas_home/hpcdkhab/job/messages/${PBS_JOBID}_USER_OUT.out
+#PBS -e /nas_home/hpcdkhab/job/messages/${PBS_JOBID}_USER_ERR.err
+
+#procs: 16(192 procs)-PBS 1536
+#procs: 15(144 procs)-PBS 1152
+#procs: 14(128 procs)-PBS 1024
+#procs: 13(96 procs)-PBS  768
+#procs: 12(64 procs)-PBS  512
+#procs: 11(48 procs)-PBS  384
+#procs: 10(36 procs)-PBS  288
+
+PROC_START=USER_PROC_START
+PROC_END=USER_PROC_END
+CORE_START=USER_CORE_START
+CORE_END=USER_CORE_END
+SIZE_START=USER_SIZE_START
+SIZE_END=USER_SIZE_END
+PERF_NEW=USER_PERF_NEW
+MV_ALGORITHM=USER_MV_ALGORITHM
+MV_COMMUNICATOR=USER_MV_COMMUNICATOR
+matrix_scaler=user_matrix_scaler
+preconditioner=user_preconditioner
+mv_algorithm_off_diag=user_mv_algorithm_off_diag
+echo "JOB MV_ALGORITH="$MV_ALGORITH
+echo "JOB MV_COMMUNICATOR="$MV_COMMUNICATOR
+
+BENCHMARK=USER_BENCHMARK
+PREFIX="USER_PREFIX"
+#procs  
+PROJ_DIR=USER_PROJ_DIR
+LUSTRE_DIR=USER_LUSTRE_DIR
+PERF_FILE=USER_PERF_FILE
+
+RUN_SCRIPT_NAME=USER_RUN_SCRIPT_NAME
+#export CRAY_OMP_CHECK_AFFINITY=TRUE
+#module load perftools
+
+#PREFIX;SIZE_START;SIZE_END;PROCS_START;PROCS_END;PERF_NEW;MV_ALGORITHM_ID;MV_COMMUNICATOR_ID;BENCHMARK_ID;CORE_START;CORE_END
+
+#PROCS_ARRAY=("not used" "1" "2" "4" "8" "12" "16" "18" "24" "32"  "36" "48"  "64" "96" "128" "144" "192" "256" "384" "512" "576" "768" "1024" "1152" "1536" "1728" "2304" )
+#XX=("not used"   "24" "48" "96" "192" "288" "384")
+
+
+bash -x ${PROJ_DIR}/${RUN_SCRIPT_NAME} "${PREFIX}" "${SIZE_START}" "${SIZE_END}" "${PROC_START}" "${PROC_END}" "${PERF_NEW}" "${MV_ALGORITHM}" "${MV_COMMUNICATOR}" "${BENCHMARK}" "${CORE_START}" "${CORE_END}" "${PERF_FILE}" "${matrix_scaler}" "${preconditioner}" "${mv_algorithm_off_diag}"
+
+#aprun -n 8  ./cel_cg -verbosity 1 -nx 8 -ny 8 -nz 8 -dx 2 -dy 2 -dz 2  -generatematrix 1 -iter_max 1000 -eps 0.001 -attempts 1 -check_result 1 -write_matrix 0 -write_performance 0  -threads 2 -mv_communicator 4
+

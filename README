@@ -1,0 +1,53 @@
+======================================================================
+=              CRESTA Exascale Library                               =
+======================================================================
+=                 CEL-Linear-Solver                                  =
+=         Version 0.9 (initial prototype)                            =
+=            Release date: Sep 2013                                  =
+======================================================================
+=    Project CRESTA (see details on https://cresta-project.eu)       =
+======================================================================
+ Send you email about the bugs to
+ * The High Performance Computing Center Stuttgart (HLRS) of the University of Stuttgart
+ * Dmitry Khabi,  (email: khabi@hlrs.de)
+
+This README file describes how to compile the ANSI C translation of the CEL-Linear-Solver library, called CEL.
+CEL must be compiled with C and Fortran compilers.
+======================================================================
+
+I - How to compile:
+I.1 - Adjust compiler: For a default compiling, you will need to modify the file
+make_env.inc:
+export IS_DEBUG=YES or NOT #select debug or release mode
+export COMPILER=GNU or INTEL or CRAY #select compiler
+export CRAY=NO or YES #is this Cray platform ?
+
+I.2 - execute "$make clean base fbase fspmt fblspmt tests"  or "$make clean all tests"
+
+======================================================================
+
+II- How to start
+II.1 - The test tests/cel_mpi_omp/cel_mpi_omp_cg  for linear solver is based on 3D poisson equation for the domain [0;1]x[0;1]x[0;1].
+The domain is divided into equally large subdomain. The number of subdomains must be equal to the number of processes.
+The following arguments must be defined by execution:
+-nx <int> : number of nodes in X-direction
+-ny <int> : number of nodes in Y-direction
+-nz <int> : number of nodes in Z-direction
+-dx <int> : number of sub-domains in X-direction
+-dy <int> : number of sub-domains in Y-direction
+-dz <int> : number of sub-domains in Z-direction
+-threads : number of threads per process (min. 2)
+-tests_num : Set up how many times to solve the system
+-generatematrix : kind of the matrix (use 1)
+-num_chunks : number of chunks in a block
+-chunk_size : size of chunk
+-iter_max : max. number of iterations
+-eps : accurancy of the solution
+
+Example for two processes by matrix diagonal size 32*32*32:
+
+mpirun -n 2  tests/cel_mpi_omp/cel_mpi_omp_cg  -attempts 1 -verbosity 1 -nx 32 -ny 32 -nz 32 -dx 2 -dy 1 -dz 1 -tests_num 1 -threads 4 -generatematrix 1 -num_chunks 2 -chunk_size 128 -iter_max 1000 -eps 0.1
+
+Read more details in "D4.3.1 - Initial prototype of exascale algorithms and solvers" (https://cresta-project.eu) 
+
+

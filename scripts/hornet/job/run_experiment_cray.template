@@ -1,0 +1,138 @@
+#!/bin/sh
+
+PROJ_DIR="/nas_home/hpcdkhab/job/"
+BIN="${PROJ_DIR}/cel_cg"
+BIN_PAT="${PROJ_DIR}/cel_cg+pat"
+LUSTRE_DIR="/nas_home/hpcdkhab/job/data/"
+WRITE_COMM_GRAPH=0
+USE_CRAYPAT=0
+RUN_TEST=1
+
+APRUN_PARM_1="USER_RUN_APRUN_PARM_1"
+APRUN_PARM_N="USER_RUN_APRUN_PARM_N"
+
+XX=USER_RUN_XX
+
+PROCS_ARRAY=("not used" "1" "2" "4" "8" "12" "16" "18" "24" "32"  "36" "48"  "64" "96" "128" "144" "192" "256" "384" "512" "576" "768" "1024" "1152" "1536" "1728" "2304" )
+
+ATTEMPTS=USER_RUN_ATTEMPTS
+
+DX=("not used"          "1" "2" "2" "2" "3"  "4"  "3"  "4"  "4"   "4"  "4"   "4"  "6"  "8"   "6"   "8"   "8"   "8"   "8"   "12"  "12"  "16"   "12"   "16"   "12"   "16"   )
+DY=("not used"          "1" "1" "2" "2" "2"  "2"  "3"  "3"  "4"   "3"  "4"   "4"  "4"  "4"   "6"   "6"   "8"   "8"   "8"   "8"   "8"   "8"    "12"   "12"   "12"   "12"   )
+DZ=("not used"          "1" "1" "1" "2" "2"  "2"  "2"  "2"  "2"   "3"  "3"   "4"  "4"  "4"   "4"   "4"   "4"   "6"   "8"   "6"   "8"   "8"    "12"   "8"    "12"   "12"   )
+
+
+
+PREFIX=$1
+SIZE_START=$2
+SIZE_END=$3
+PROCS_START=$4
+PROCS_END=$5
+PERF_NEW=$6
+
+
+MV_ALGORITHM=$7
+MV_COMMUNICATOR=$8
+BENCHMARK=$9
+CORE_START=${10}
+CORE_END=${11}
+PERF_FILE=${12}
+matrix_scaler=${13}
+preconditioner=${14}
+mv_algorithm_off_diag=${15}
+PERF_FILE=${12}
+write_performance=user_write_performance
+CHECK_RESULT=USER_RUN_CHECK_RESULT
+TOL_EPS=USER_TOL_EPS
+iter_max=100
+echo "size: ${XX[${SIZE_START}]} - ${XX[${SIZE_END}]}"
+echo procs: ${PROCS_ARRAY[${PROCS_START}]} - ${PROCS_ARRAY[${PROCS_END}]} 
+echo PREFIX: $PREFIX
+echo SIZE_START: $SIZE_START
+echo SIZE_END: $SIZE_END
+echo PROCS_START: $PROCS_START
+echo PROCS_END: $PROCS_END
+echo PERF_NEW: $PERF_NEW
+echo MV_ALGORITHM: $MV_ALGORITHM
+echo MV_COMMUNICATOR: $MV_COMMUNICATOR
+echo BENCHMARK: $BENCHMARK
+echo CORE_START: ${CORE_START}
+echo CORE_END: ${CORE_END}
+echo PERF_FILE: $PERF_FILE
+echo matrix_scaler: $matrix_scaler
+echo preconditioner: $preconditioner
+echo mv_algorithm_off_diag: $mv_algorithm_off_diag
+echo CHECK_RESULT: $CHECK_RESULT
+cd ${PROJ_DIR}
+export CRAY_OMP_CHECK_AFFINITY=TRUE
+export MPICH_RANK_REORDER_METHOD=0
+export PAT_RT_SUMMARY=1
+
+perf_file_path="${LUSTRE_DIR}/${PERF_FILE}"
+
+#perf_file="${LUSTRE_DIR}/${PREFIX}.dat"
+
+module load mpi/mvapich2/2.0rc2-gnu-4.8.2
+export MV2_ENABLE_AFFINITY=0
+
+if [ "${PERF_NEW}" -ge "1" ];  then
+  rm ${perf_file_path} -rf
+fi
+
+for j in `seq ${SIZE_START} ${SIZE_END}`
+do
+   for p in `seq ${PROCS_START} ${PROCS_END}`
+  do 
+   for i in `seq ${CORE_START} ${CORE_END}`
+   do
+   echo "procs:" ${PROCS_ARRAY[p]}  "threads per proc:" $i "test id:" ${j}
+   echo "DX:" ${DX[p]} "DY:"  ${DY[p]} "DZ:" ${DZ[p]} "XX:" ${XX[j]} "ATTEMPTS:" ${ATTEMPTS}
+   echo "cores:" ${CORE_START} "-" ${CORE_END} 
+  export MPICH_RANK_REORDER_METHOD=0
+  #if [ "${USE_CRAYPAT}" -ge "1" ];  then
+  #  export PAT_RT_EXPFILE_DIR=${LUSTRE_DIR}/craypat_revine_study_${XX[j]}_${PROCS_ARRAY[p]}/
+  #  export PAT_RT_EXPFILE_NAME=pat_statistic_${XX[j]}_${PROCS_ARRAY[p]}
+##    export PAT_RT_HWPC="PAPI_FP_OPS"
+ #   export PAT_RT_COMMENT="POISSON 3D size -nx ${XX[j]} -ny ${XX[j]} -nz ${XX[j]}  procs:  ${PROCS_ARRAY[p]} distribution: -dx ${DX[p]} -dy ${DY[p]} -dz ${DZ[p]} algo:  -mv_algorithm ${MV_ALGORITHM_ID} -mv_communicator ${MV_COMMUNICATOR_ID} -benchmark_id ${BENCHMARK_ID}"
+  #  rm ${PAT_RT_EXPFILE_DIR} -rf
+  #  mkdir ${PAT_RT_EXPFILE_DIR} -p
+  #  case ${PROCS_ARRAY[p]} in
+  #  1)
+  #    aprun -n ${PROCS_ARRAY[p]} ${APRUN_PARM_1} ${BIN_PAT}   -verbosity 1 -nx ${XX[j]} -ny ${XX[j]} -nz ${XX[j]} -dx ${DX[p]} -dy ${DY[p]} -dz ${DZ[p]} -prefetcher 0 -increase_factor 1.1 -tests_num 1 -generatematrix 1  -iter_max 1000  -eps 0.001 -attempts ${ATTEMPTS} -check_result 0 -write_matrix 0 -write_performance  1 -performance_filename temp.file  -threads ${i}  -write_profile 0 -mv_algorithm ${MV_ALGORITHM_ID} -mv_communicator ${MV_COMMUNICATOR_ID} -benchmark_id ${BENCHMARK_ID} -memory_level ${j}
+  #  ;;
+  #  *) 
+  #    aprun -n ${PROCS_ARRAY[p]} ${APRUN_PARM_N} ${BIN_PAT}  -verbosity 1 -nx ${XX[j]} -ny ${XX[j]} -nz ${XX[j]} -dx ${DX[p]} -dy ${DY[p]} -dz ${DZ[p]} -prefetcher 0 -increase_factor 1.1 -tests_num 1 -generatematrix 1  -iter_max 1000  -eps 0.001 -attempts ${ATTEMPTS} -check_result 0 -write_matrix 0 -write_performance  0 -performance_filename temp.file  -threads ${i}  -write_profile 0 -mv_algorithm ${MV_ALGORITHM_ID} -mv_communicator ${MV_COMMUNICATOR_ID} -benchmark_id ${BENCHMARK_ID} -memory_level ${j}
+  # ;;
+  # esac 
+  # sleep 1
+  # cd ${PAT_RT_EXPFILE_DIR}
+  # pat_report  -o report.txt ${PAT_RT_EXPFILE_DIR}/${PAT_RT_EXPFILE_NAME}.xf
+  # cd ${PROJ_DIR}
+  # rm MPICH_RANK_ORDER -f
+  # cp ${PAT_RT_EXPFILE_DIR}/MPICH_RANK_ORDER.*  ${PROJ_DIR}/MPICH_RANK_ORDER
+  #  sleep 1
+  # export MPICH_RANK_REORDER_METHOD=1
+  # if [ -e "${PROJ_DIR}/MPICH_RANK_ORDER" ] 
+  # then
+  #  export MPICH_RANK_REORDER_METHOD=3
+  # fi
+  #fi
+#  sleep 2  
+  if [ "${RUN_TEST}" -ge "1" ];  then
+    case ${PROCS_ARRAY[p]} in
+      1)
+        mpirun -n ${PROCS_ARRAY[p]} ${APRUN_PARM_1} ${BIN}   -verbosity 1 -nx ${XX[j]} -ny ${XX[j]} -nz ${XX[j]} -dx ${DX[p]} -dy ${DY[p]} -dz ${DZ[p]} -prefetcher 0 -increase_factor 1.1 -tests_num 1 -generatematrix 1  -iter_max ${iter_max}  -eps ${TOL_EPS} -attempts ${ATTEMPTS} -check_result ${CHECK_RESULT} -write_matrix 0 -write_performance  ${write_performance} -performance_filename ${perf_file_path} -threads ${i} -write_profile 0 -mv_algorithm ${MV_ALGORITHM} -mv_communicator ${MV_COMMUNICATOR} -benchmark_id ${BENCHMARK} -memory_level ${j} -matrix_scaler ${matrix_scaler} -preconditioner ${preconditioner} -mv_algorithm_off_diag ${mv_algorithm_off_diag}
+      ;;
+      *) 
+       mpirun -n ${PROCS_ARRAY[p]} ${APRUN_PARM_N} ${BIN}   -verbosity 1 -nx ${XX[j]} -ny ${XX[j]} -nz ${XX[j]} -dx ${DX[p]} -dy ${DY[p]} -dz ${DZ[p]} -prefetcher 0 -increase_factor 1.1 -tests_num 1 -generatematrix 1  -iter_max ${iter_max}  -eps 0.00000001 -attempts ${ATTEMPTS} -check_result ${CHECK_RESULT} -write_matrix 0 -write_performance  ${write_performance} -performance_filename ${perf_file_path} -threads ${i} -write_profile 0 -mv_algorithm ${MV_ALGORITHM} -mv_communicator ${MV_COMMUNICATOR} -benchmark_id ${BENCHMARK} -memory_level ${j} -matrix_scaler ${matrix_scaler} -preconditioner ${preconditioner} -mv_algorithm_off_diag ${mv_algorithm_off_diag}
+
+     ;;
+     esac 
+   fi
+#   mv *.vtk ${PAT_RT_EXPFILE_DIR}/
+  done
+ done
+done
+
+#echo "#" ${APRUN_PARM} >> ${perf_file_path}
+
